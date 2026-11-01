@@ -18,3 +18,5 @@ func CSV(w io.Writer, tasks []store.Task) error {
 	cw.Flush()
 	return cw.Error()
 }
+
+func csvHeader() []string { return []string{"id","done","title"} }
