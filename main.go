@@ -21,7 +21,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add <title> | list | done <id>")
+		return fmt.Errorf("usage: taskr add <title> | list | export | done <id>")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -36,6 +36,8 @@ func run(args []string) error {
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
 		return format.Table(os.Stdout, s.Tasks)
+	case "export":
+		return format.CSV(os.Stdout, s.Tasks)
 	case "done":
 		if len(args) < 2 {
 			return fmt.Errorf("done needs an id")
