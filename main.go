@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/Meraj-08/ao-go-playground/internal/format"
 	"github.com/Meraj-08/ao-go-playground/internal/store"
 )
 
@@ -34,10 +35,7 @@ func run(args []string) error {
 		t := s.Add(args[1])
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
-		for _, t := range s.Tasks {
-			fmt.Printf("%d %s\n", t.ID, t.Title)
-		}
-		return nil
+		return format.Table(os.Stdout, s.Tasks)
 	case "done":
 		if len(args) < 2 {
 			return fmt.Errorf("done needs an id")
