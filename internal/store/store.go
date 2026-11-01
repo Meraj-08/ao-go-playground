@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -86,6 +87,21 @@ func (s *Store) Done(id int) error {
 		}
 	}
 	return fmt.Errorf("no task %d", id)
+}
+
+// Sorted returns the tasks with open ones first, then by priority, then oldest first.
+func (s *Store) Sorted() []Task {
+	out := append([]Task(nil), s.Tasks...)
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Done != out[j].Done {
+			return !out[i].Done
+		}
+		if out[i].Priority != out[j].Priority {
+			return out[i].Priority > out[j].Priority
+		}
+		return out[i].Created.Before(out[j].Created)
+	})
+	return out
 }
 
 // Save writes the tasks back to disk.

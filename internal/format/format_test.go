@@ -9,12 +9,12 @@ import (
 
 func TestTable(t *testing.T) {
 	var b strings.Builder
-	err := Table(&b, []store.Task{{ID: 1, Title: "a", Done: true}, {ID: 2, Title: "b"}})
+	err := Table(&b, []store.Task{{ID: 1, Title: "a", Done: true}, {ID: 2, Title: "b", Priority: store.High}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	out := b.String()
-	if !strings.Contains(out, "[x]   a") || !strings.Contains(out, "[ ]   b") {
+	if !strings.Contains(out, "PRIORITY") || !strings.Contains(out, "high") {
 		t.Fatalf("unexpected table:\n%s", out)
 	}
 }

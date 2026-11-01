@@ -35,7 +35,7 @@ func run(args []string) error {
 		t := s.Add(args[1], store.Normal)
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
-		return format.Table(os.Stdout, s.Tasks)
+		return format.Table(os.Stdout, s.Sorted())
 	case "done":
 		if len(args) < 2 {
 			return fmt.Errorf("done needs an id")
