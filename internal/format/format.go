@@ -16,7 +16,7 @@ func Table(w io.Writer, tasks []store.Task) error {
 	for _, t := range tasks {
 		mark := " "
 		if t.Done {
-			mark = "x"
+			mark = "\x1b[32mx\x1b[0m"
 		}
 		fmt.Fprintf(tw, "%d\t[%s]\t%s\n", t.ID, mark, t.Title)
 	}
