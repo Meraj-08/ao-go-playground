@@ -1,0 +1,6 @@
+test:
+	go vet ./...
+	go test ./...
+
+build:
+	go build -o taskr .
