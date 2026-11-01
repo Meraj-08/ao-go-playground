@@ -32,7 +32,7 @@ func run(args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("add needs a title")
 		}
-		t := s.Add(args[1])
+		t := s.Add(args[1], store.Normal)
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
 		return format.Table(os.Stdout, s.Tasks)

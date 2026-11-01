@@ -11,8 +11,8 @@ func TestAddDoneSave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a := s.Add("first")
-	s.Add("second")
+	a := s.Add("first", Normal)
+	s.Add("second", High)
 	if a.ID != 1 || len(s.Tasks) != 2 {
 		t.Fatalf("got id %d and %d tasks", a.ID, len(s.Tasks))
 	}
@@ -35,5 +35,13 @@ func TestDoneMissing(t *testing.T) {
 	s := &Store{}
 	if err := s.Done(9); err == nil {
 		t.Fatal("expected an error for a missing task")
+	}
+}
+
+func TestParsePriority(t *testing.T) {
+	for in, want := range map[string]Priority{"low": Low, "high": High, "normal": Normal, "": Normal} {
+		if got := ParsePriority(in); got != want {
+			t.Errorf("ParsePriority(%q) = %v, want %v", in, got, want)
+		}
 	}
 }

@@ -11,10 +11,41 @@ import (
 
 // Task is one item on the list.
 type Task struct {
-	ID      int       `json:"id"`
-	Title   string    `json:"title"`
-	Done    bool      `json:"done"`
-	Created time.Time `json:"created"`
+	ID       int       `json:"id"`
+	Title    string    `json:"title"`
+	Done     bool      `json:"done"`
+	Priority Priority  `json:"priority"`
+	Created  time.Time `json:"created"`
+}
+
+// Priority orders tasks; higher comes first.
+type Priority int
+
+const (
+	Low Priority = iota
+	Normal
+	High
+)
+
+// ParsePriority reads "low", "normal" or "high". Anything else is Normal.
+func ParsePriority(s string) Priority {
+	switch s {
+	case "low":
+		return Low
+	case "high":
+		return High
+	}
+	return Normal
+}
+
+func (p Priority) String() string {
+	switch p {
+	case Low:
+		return "low"
+	case High:
+		return "high"
+	}
+	return "normal"
 }
 
 // Store reads and writes tasks at Path.
@@ -40,8 +71,8 @@ func Open(path string) (*Store, error) {
 }
 
 // Add appends a task and returns it.
-func (s *Store) Add(title string) Task {
-	t := Task{ID: s.nextID(), Title: title, Created: time.Now()}
+func (s *Store) Add(title string, p Priority) Task {
+	t := Task{ID: s.nextID(), Title: title, Priority: p, Created: time.Now()}
 	s.Tasks = append(s.Tasks, t)
 	return t
 }
