@@ -21,7 +21,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add <title> | list | done <id>")
+		return fmt.Errorf("usage: taskr add <title> | list | done <id> | delete <id>")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -47,6 +47,18 @@ func run(args []string) error {
 		if err := s.Done(id); err != nil {
 			return err
 		}
+	case "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("delete needs an id")
+		}
+		id, err := strconv.Atoi(args[1])
+		if err != nil {
+			return fmt.Errorf("bad id %q", args[1])
+		}
+		if err := s.Delete(id); err != nil {
+			return err
+		}
+		fmt.Printf("deleted #%d\n", id)
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
