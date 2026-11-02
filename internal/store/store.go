@@ -6,15 +6,50 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"time"
 )
 
 // Task is one item on the list.
 type Task struct {
-	ID      int       `json:"id"`
-	Title   string    `json:"title"`
-	Done    bool      `json:"done"`
-	Created time.Time `json:"created"`
+	ID       int       `json:"id"`
+	Title    string    `json:"title"`
+	Done     bool      `json:"done"`
+	Priority Priority  `json:"priority"`
+	Created  time.Time `json:"created"`
+}
+
+// Priority orders tasks; higher comes first.
+type Priority int
+
+const (
+	Low Priority = iota
+	Normal
+	High
+)
+
+// ParsePriority reads "low", "normal" or "high".
+func ParsePriority(s string) (Priority, error) {
+	switch s {
+	case "low":
+		return Low, nil
+	case "normal", "":
+		return Normal, nil
+	case "high":
+		return High, nil
+	}
+	return Normal, fmt.Errorf("unknown priority %q (want low, normal or high)", s)
+}
+
+// String names the priority the way the CLI accepts it.
+func (p Priority) String() string {
+	switch p {
+	case Low:
+		return "low"
+	case High:
+		return "high"
+	}
+	return "normal"
 }
 
 // Store reads and writes tasks at Path.
@@ -40,8 +75,8 @@ func Open(path string) (*Store, error) {
 }
 
 // Add appends a task and returns it.
-func (s *Store) Add(title string) Task {
-	t := Task{ID: s.nextID(), Title: title, Created: time.Now()}
+func (s *Store) Add(title string, p Priority) Task {
+	t := Task{ID: s.nextID(), Title: title, Priority: p, Created: time.Now()}
 	s.Tasks = append(s.Tasks, t)
 	return t
 }
@@ -55,6 +90,21 @@ func (s *Store) Done(id int) error {
 		}
 	}
 	return fmt.Errorf("no task %d", id)
+}
+
+// Sorted returns the tasks with open ones first, then by priority, then oldest first.
+func (s *Store) Sorted() []Task {
+	out := append([]Task(nil), s.Tasks...)
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Done != out[j].Done {
+			return !out[i].Done
+		}
+		if out[i].Priority != out[j].Priority {
+			return out[i].Priority > out[j].Priority
+		}
+		return out[i].Created.Before(out[j].Created)
+	})
+	return out
 }
 
 // Save writes the tasks back to disk.

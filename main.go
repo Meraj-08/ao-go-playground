@@ -2,6 +2,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -21,7 +22,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add <title> | list | done <id>")
+		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id>")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -29,13 +30,22 @@ func run(args []string) error {
 	}
 	switch args[0] {
 	case "add":
-		if len(args) < 2 {
+		fs := flag.NewFlagSet("add", flag.ContinueOnError)
+		prio := fs.String("priority", "normal", "low, normal or high")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		if fs.NArg() < 1 {
 			return fmt.Errorf("add needs a title")
 		}
-		t := s.Add(args[1])
+		p, err := store.ParsePriority(*prio)
+		if err != nil {
+			return err
+		}
+		t := s.Add(fs.Arg(0), p)
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
-		return format.Table(os.Stdout, s.Tasks)
+		return format.Table(os.Stdout, s.Sorted())
 	case "done":
 		if len(args) < 2 {
 			return fmt.Errorf("done needs an id")

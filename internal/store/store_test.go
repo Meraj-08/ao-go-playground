@@ -11,8 +11,8 @@ func TestAddDoneSave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a := s.Add("first")
-	s.Add("second")
+	a := s.Add("first", Normal)
+	s.Add("second", High)
 	if a.ID != 1 || len(s.Tasks) != 2 {
 		t.Fatalf("got id %d and %d tasks", a.ID, len(s.Tasks))
 	}
@@ -35,5 +35,30 @@ func TestDoneMissing(t *testing.T) {
 	s := &Store{}
 	if err := s.Done(9); err == nil {
 		t.Fatal("expected an error for a missing task")
+	}
+}
+
+func TestParsePriority(t *testing.T) {
+	for in, want := range map[string]Priority{"low": Low, "high": High, "normal": Normal, "": Normal} {
+		if got, err := ParsePriority(in); err != nil || got != want {
+			t.Errorf("ParsePriority(%q) = %v, %v; want %v", in, got, err, want)
+		}
+	}
+	if _, err := ParsePriority("urgent"); err == nil {
+		t.Error("expected an error for an unknown priority")
+	}
+}
+
+func TestSortedPutsOpenHighFirst(t *testing.T) {
+	s := &Store{}
+	s.Add("low", Low)
+	s.Add("high", High)
+	done := s.Add("done high", High)
+	if err := s.Done(done.ID); err != nil {
+		t.Fatal(err)
+	}
+	got := s.Sorted()
+	if got[0].Title != "high" || got[1].Title != "low" || got[2].Title != "done high" {
+		t.Fatalf("unexpected order: %v, %v, %v", got[0].Title, got[1].Title, got[2].Title)
 	}
 }
