@@ -48,3 +48,17 @@ func TestParsePriority(t *testing.T) {
 		t.Error("expected an error for an unknown priority")
 	}
 }
+
+func TestSortedPutsOpenHighFirst(t *testing.T) {
+	s := &Store{}
+	s.Add("low", Low)
+	s.Add("high", High)
+	done := s.Add("done high", High)
+	if err := s.Done(done.ID); err != nil {
+		t.Fatal(err)
+	}
+	got := s.Sorted()
+	if got[0].Title != "high" || got[1].Title != "low" || got[2].Title != "done high" {
+		t.Fatalf("unexpected order: %v, %v, %v", got[0].Title, got[1].Title, got[2].Title)
+	}
+}

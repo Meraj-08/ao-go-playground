@@ -41,6 +41,7 @@ func ParsePriority(s string) (Priority, error) {
 	return Normal, fmt.Errorf("unknown priority %q (want low, normal or high)", s)
 }
 
+// String names the priority the way the CLI accepts it.
 func (p Priority) String() string {
 	switch p {
 	case Low:
