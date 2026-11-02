@@ -13,3 +13,9 @@ func TestStats(t *testing.T) {
 		t.Fatalf("got %+v", got)
 	}
 }
+
+func TestStatsEmpty(t *testing.T) {
+	if got := (&Store{}).Stats(); got != (Stats{}) {
+		t.Fatalf("got %+v", got)
+	}
+}
