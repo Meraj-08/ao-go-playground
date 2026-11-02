@@ -57,6 +57,20 @@ func (s *Store) Done(id int) error {
 	return fmt.Errorf("no task %d", id)
 }
 
+// Delete removes the task with id.
+func (s *Store) Delete(id int) error {
+	if id <= 0 {
+		return fmt.Errorf("invalid task id %d", id)
+	}
+	for i := range s.Tasks {
+		if s.Tasks[i].ID == id {
+			s.Tasks = append(s.Tasks[:i], s.Tasks[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("no task %d", id)
+}
+
 // Save writes the tasks back to disk.
 func (s *Store) Save() error {
 	data, err := json.MarshalIndent(s.Tasks, "", "  ")
