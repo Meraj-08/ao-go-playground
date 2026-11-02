@@ -28,15 +28,17 @@ const (
 	High
 )
 
-// ParsePriority reads "low", "normal" or "high". Anything else is Normal.
-func ParsePriority(s string) Priority {
+// ParsePriority reads "low", "normal" or "high".
+func ParsePriority(s string) (Priority, error) {
 	switch s {
 	case "low":
-		return Low
+		return Low, nil
+	case "normal", "":
+		return Normal, nil
 	case "high":
-		return High
+		return High, nil
 	}
-	return Normal
+	return Normal, fmt.Errorf("unknown priority %q (want low, normal or high)", s)
 }
 
 func (p Priority) String() string {

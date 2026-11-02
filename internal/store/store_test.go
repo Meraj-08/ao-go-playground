@@ -40,8 +40,11 @@ func TestDoneMissing(t *testing.T) {
 
 func TestParsePriority(t *testing.T) {
 	for in, want := range map[string]Priority{"low": Low, "high": High, "normal": Normal, "": Normal} {
-		if got := ParsePriority(in); got != want {
-			t.Errorf("ParsePriority(%q) = %v, want %v", in, got, want)
+		if got, err := ParsePriority(in); err != nil || got != want {
+			t.Errorf("ParsePriority(%q) = %v, %v; want %v", in, got, err, want)
 		}
+	}
+	if _, err := ParsePriority("urgent"); err == nil {
+		t.Error("expected an error for an unknown priority")
 	}
 }

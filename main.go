@@ -38,7 +38,11 @@ func run(args []string) error {
 		if fs.NArg() < 1 {
 			return fmt.Errorf("add needs a title")
 		}
-		t := s.Add(fs.Arg(0), store.ParsePriority(*prio))
+		p, err := store.ParsePriority(*prio)
+		if err != nil {
+			return err
+		}
+		t := s.Add(fs.Arg(0), p)
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
 		return format.Table(os.Stdout, s.Sorted())
