@@ -48,6 +48,10 @@ func run(args []string) error {
 		return format.Table(os.Stdout, s.Sorted())
 	case "stats":
 		st := s.Stats()
+		if st.Total == 0 {
+			fmt.Println("no tasks yet")
+			return nil
+		}
 		fmt.Printf("%d tasks: %d open, %d done\n", st.Total, st.Open, st.Done)
 		return nil
 	case "done":
