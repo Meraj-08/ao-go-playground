@@ -4,8 +4,8 @@ import "testing"
 
 func TestStats(t *testing.T) {
 	s := &Store{}
-	s.Add("a")
-	s.Add("b")
+	s.Add("a", Normal)
+	s.Add("b", Normal)
 	if err := s.Done(2); err != nil {
 		t.Fatal(err)
 	}
