@@ -49,6 +49,33 @@ func TestParsePriority(t *testing.T) {
 	}
 }
 
+func TestSearchMatch(t *testing.T) {
+	s := &Store{}
+	s.Add("buy milk", Normal)
+	s.Add("walk the dog", Normal)
+	got := s.Search("milk")
+	if len(got) != 1 || got[0].Title != "buy milk" {
+		t.Fatalf("unexpected matches: %+v", got)
+	}
+}
+
+func TestSearchIgnoresCase(t *testing.T) {
+	s := &Store{}
+	s.Add("Buy Milk", Normal)
+	got := s.Search("milk")
+	if len(got) != 1 || got[0].Title != "Buy Milk" {
+		t.Fatalf("case-insensitive search failed: %+v", got)
+	}
+}
+
+func TestSearchNoMatch(t *testing.T) {
+	s := &Store{}
+	s.Add("buy milk", Normal)
+	if got := s.Search("bread"); len(got) != 0 {
+		t.Fatalf("expected no matches, got %+v", got)
+	}
+}
+
 func TestSortedPutsOpenHighFirst(t *testing.T) {
 	s := &Store{}
 	s.Add("low", Low)
