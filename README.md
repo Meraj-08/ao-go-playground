@@ -15,6 +15,12 @@ Priorities are `low`, `normal` (the default) and `high`; anything else is reject
 
 Tasks are kept in `tasks.json` in the current directory.
 
+## Due dates
+
+Due dates are written as `YYYY-MM-DD`, such as `2026-11-05`; surrounding spaces are ignored and anything else is rejected. They sort soonest first and display like `Nov 5`, and an unset date displays as blank.
+
+This is handled by helpers in `internal/store` and `internal/format` for now: the `taskr` commands don't accept or show due dates yet.
+
 ## Development
 
 ```sh
