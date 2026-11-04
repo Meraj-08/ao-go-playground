@@ -108,9 +108,10 @@ func (s *Store) Sorted() []Task {
 	return out
 }
 
-// Search returns the sorted tasks whose title contains text, ignoring case.
+// Search returns the sorted tasks whose title contains text, ignoring case
+// and surrounding whitespace.
 func (s *Store) Search(text string) []Task {
-	needle := strings.ToLower(text)
+	needle := strings.ToLower(strings.TrimSpace(text))
 	var out []Task
 	for _, t := range s.Sorted() {
 		if strings.Contains(strings.ToLower(t.Title), needle) {

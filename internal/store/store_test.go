@@ -68,6 +68,15 @@ func TestSearchIgnoresCase(t *testing.T) {
 	}
 }
 
+func TestSearchTrimsWhitespace(t *testing.T) {
+	s := &Store{}
+	s.Add("buy milk", Normal)
+	got := s.Search("  milk  ")
+	if len(got) != 1 || got[0].Title != "buy milk" {
+		t.Fatalf("expected whitespace to be trimmed: %+v", got)
+	}
+}
+
 func TestSearchNoMatch(t *testing.T) {
 	s := &Store{}
 	s.Add("buy milk", Normal)
