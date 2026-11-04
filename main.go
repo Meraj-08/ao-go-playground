@@ -22,7 +22,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id>")
+		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | search <text> | done <id>")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -46,6 +46,17 @@ func run(args []string) error {
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
 		return format.Table(os.Stdout, s.Sorted())
+	case "search":
+		if len(args) < 2 {
+			return fmt.Errorf("search needs some text")
+		}
+		text := args[1]
+		matches := s.Search(text)
+		if len(matches) == 0 {
+			fmt.Printf("no tasks match %q\n", text)
+			return nil
+		}
+		return format.Table(os.Stdout, matches)
 	case "done":
 		if len(args) < 2 {
 			return fmt.Errorf("done needs an id")
