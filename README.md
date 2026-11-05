@@ -15,6 +15,12 @@ Priorities are `low`, `normal` (the default) and `high`; anything else is reject
 
 Tasks are kept in `tasks.json` in the current directory.
 
+## Task notes
+
+A task note is cleaned up by trimming surrounding spaces and dropping blank lines, and can be at most 280 characters; anything longer is cut off. Notes display like `note: call the plumber`, and an empty note displays as blank.
+
+This is handled by helpers in `internal/store` and `internal/format` for now: the `taskr` commands don't accept or show notes yet.
+
 ## Development
 
 ```sh
