@@ -1,0 +1,61 @@
+{
+  "safe/save": {
+    "summary": "`Save` now writes to a temp file and renames it over `tasks.json`. `TestFailedSaveKeepsTasks` fails on the old code and passes here.",
+    "review": "The fix looks right. Three notes below, none of them block merging.",
+    "comments": [
+      {
+        "path": "internal/store/store.go",
+        "line": 127,
+        "body": "Worth keeping: without this `Sync`, a power cut just after the rename can still leave an empty file on some filesystems. Could a one-line comment say why it's here, so nobody removes it as cleanup?"
+      },
+      {
+        "path": "internal/store/store.go",
+        "line": 137,
+        "body": "`os.Rename` replaces the path itself. If `tasks.json` is a symlink, say into a synced folder, the link becomes a plain file and the synced copy stops updating. Could we resolve the link first, or call this out in the README?"
+      },
+      {
+        "path": "internal/store/save_test.go",
+        "line": 44,
+        "body": "This needs `sh` and `ulimit`, so it would fail on Windows. Could it skip there with `t.Skip`?"
+      }
+    ]
+  },
+  "find/match": {
+    "summary": "Adds `Find`, which matches every word of a query against task titles, ignoring case.",
+    "review": "One question about empty queries.",
+    "comments": [
+      {
+        "path": "internal/store/find.go",
+        "line": 8,
+        "body": "An empty query leaves `words` empty, so `matchesAll` returns true and every task comes back. Is that what callers want, or should it return nothing?"
+      }
+    ]
+  },
+  "find/filter": {
+    "summary": "Adds `Search`, which applies `Filter` on top of `Find`.",
+    "review": "One small suggestion.",
+    "comments": [
+      {
+        "path": "internal/store/filter.go",
+        "line": 6,
+        "body": "The zero value of `Min` is `Low`, so the default keeps everything. That's right, but easy to miss. Could the field's doc comment say so?"
+      }
+    ]
+  },
+  "find/cli": {
+    "summary": "Adds the `taskr find` command. The `format` check is red because of `matches.go`, see the note on that file.",
+    "review": "Two things to look at before this merges.",
+    "comments": [
+      {
+        "path": "internal/format/matches.go",
+        "line": 12,
+        "body": "`gofmt` flags this file: its body is indented with spaces, not tabs. That's what is failing the `format` check. Running `gofmt -w internal/format/matches.go` fixes it."
+      },
+      {
+        "path": "main.go",
+        "line": 61,
+        "body": "`taskr find` with no words prints every task, because `Find` treats an empty query as a match. Should this return `find needs a query`, the way `add` does for a missing title?"
+      }
+    ]
+  }
+}
