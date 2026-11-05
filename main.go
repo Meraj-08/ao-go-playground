@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/Meraj-08/ao-go-playground/internal/format"
 	"github.com/Meraj-08/ao-go-playground/internal/store"
@@ -22,7 +23,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id>")
+		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | find [-open] [-min p] <words> | done <id>")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -46,6 +47,19 @@ func run(args []string) error {
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
 		return format.Table(os.Stdout, s.Sorted())
+	case "find":
+		fs := flag.NewFlagSet("find", flag.ContinueOnError)
+		openOnly := fs.Bool("open", false, "only open tasks")
+		min := fs.String("min", "low", "lowest priority to show")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		p, err := store.ParsePriority(*min)
+		if err != nil {
+			return err
+		}
+		query := strings.Join(fs.Args(), " ")
+		return format.Matches(os.Stdout, query, s.Search(query, store.Filter{OpenOnly: *openOnly, Min: p}))
 	case "done":
 		if len(args) < 2 {
 			return fmt.Errorf("done needs an id")
