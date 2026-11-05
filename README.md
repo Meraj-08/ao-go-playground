@@ -15,6 +15,12 @@ Priorities are `low`, `normal` (the default) and `high`; anything else is reject
 
 Tasks are kept in `tasks.json` in the current directory.
 
+## Task labels
+
+Labels are lowercased and have surrounding spaces trimmed, so ` Work ` and `work` are the same label. A set of labels is sorted alphabetically with duplicates and empty labels removed, and displays like `[home, work]`; no labels displays as blank.
+
+This is handled by helpers in `internal/store` and `internal/format` for now: the `taskr` commands don't accept or show labels yet.
+
 ## Development
 
 ```sh
