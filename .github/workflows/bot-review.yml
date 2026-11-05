@@ -21,52 +21,26 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const pull_number = Number(context.payload.pull_request?.number ?? context.payload.inputs.pr);
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
+            const { data: file } = await github.rest.repos.getContent({ owner, repo, path: ".github/review-notes.json", ref: pr.base.sha });
+            const notes = JSON.parse(Buffer.from(file.content, "base64").toString())[pr.head.ref];
+            if (!notes) return;
             const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number });
-            const goFiles = files.filter((f) => f.filename.endsWith(".go") && f.patch);
-
-            // First added line of a file's diff, on the new side.
-            const firstAdded = (patch) => {
-              let line = 0;
-              for (const row of patch.split("\n")) {
-                const hunk = row.match(/^@@ -\d+(?:,\d+)? \+(\d+)/);
-                if (hunk) { line = Number(hunk[1]); continue; }
-                if (row.startsWith("+")) return line;
-                if (!row.startsWith("-")) line++;
-              }
-              return null;
-            };
-
-            const notes = [
-              "Could this return an error instead of silently ignoring a bad value? A typo here would be easy to miss.",
-              "Nit: a short doc comment would help — it isn't obvious what order callers should expect.",
-              "Is there a test covering this branch? `go test -cover` shows it as uncovered.",
-            ];
-            const comments = goFiles.slice(0, 3).flatMap((f, i) => {
-              const line = firstAdded(f.patch);
-              return line ? [{ path: f.filename, line, side: "RIGHT", body: notes[i] }] : [];
-            });
-
             await github.rest.issues.createComment({
               owner, repo, issue_number: pull_number,
               body: [
-                "### 🤖 taskr-bot summary",
+                "### \u{1F916} taskr-bot summary",
                 "",
-                `Looked at **${files.length} files** (${goFiles.length} Go).`,
+                notes.summary,
                 "",
                 "| Check | Result |",
                 "| --- | --- |",
-                "| Builds | ✅ |",
-                "| Tests added | " + (files.some((f) => f.filename.endsWith("_test.go")) ? "✅" : "⚠️ none") + " |",
-                "| Inline notes | " + comments.length + " |",
-                "",
-                "Reply here or on a thread if something looks off.",
+                "| Files changed | " + files.length + " |",
+                "| Tests added | " + (files.some((f) => f.filename.endsWith("_test.go")) ? "\u2705" : "\u26A0\uFE0F none") + " |",
+                "| Inline notes | " + notes.comments.length + " |",
               ].join("\n"),
             });
-
-            if (comments.length) {
-              await github.rest.pulls.createReview({
-                owner, repo, pull_number, event: "COMMENT",
-                body: "A few small things I noticed — none of them block merging.",
-                comments,
-              });
-            }
+            await github.rest.pulls.createReview({
+              owner, repo, pull_number, event: "COMMENT", body: notes.review,
+              comments: notes.comments.map((c) => ({ ...c, side: "RIGHT" })),
+            });
