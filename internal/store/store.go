@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 )
@@ -107,13 +108,33 @@ func (s *Store) Sorted() []Task {
 	return out
 }
 
-// Save writes the tasks back to disk.
+// Save writes the tasks to a temporary file beside Path, then renames it over
+// Path. A save that fails partway leaves the previous list untouched.
 func (s *Store) Save() error {
 	data, err := json.MarshalIndent(s.Tasks, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.Path, data, 0o644)
+	tmp, err := os.CreateTemp(filepath.Dir(s.Path), ".tasks-*.json")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp.Name(), 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), s.Path)
 }
 
 func (s *Store) nextID() int {

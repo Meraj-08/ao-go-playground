@@ -54,4 +54,7 @@ func TestFailedSaveKeepsTasks(t *testing.T) {
 	if len(again.Tasks) != 3 {
 		t.Fatalf("tasks.json has %d tasks after a failed save, want 3", len(again.Tasks))
 	}
+	if entries, _ := os.ReadDir(dir); len(entries) != 1 {
+		t.Fatalf("a failed save left %d files behind, want only tasks.json", len(entries))
+	}
 }
