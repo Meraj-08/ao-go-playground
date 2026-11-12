@@ -1,0 +1,61 @@
+{
+  "lock/adds": {
+    "summary": "`Open` now takes a lock on `tasks.json.lock` and `Save` lets it go, so two `taskr add`s take turns. `TestConcurrentAddsKeepEveryTask` keeps 1 of 50 tasks on the old code and all 50 here.",
+    "review": "The fix looks right. Three notes below, none of them block merging.",
+    "comments": [
+      {
+        "path": "internal/store/lock_unix.go",
+        "line": 13,
+        "body": "`flock` is advisory: a program that writes `tasks.json` without taking the lock, like a sync tool or an editor, can still race with `taskr`. Worth a line in the README?"
+      },
+      {
+        "path": "internal/store/lock_other.go",
+        "line": 8,
+        "body": "This is a no-op off Unix, so two adds can still race on Windows. Could it use `LockFileEx`, or should the README say so?"
+      },
+      {
+        "path": "internal/store/store.go",
+        "line": 137,
+        "body": "`Save` releases the lock even when the write fails. That's right, since the caller can't retry while holding it, but a comment saying so would stop someone moving the `Close` after the write."
+      }
+    ]
+  },
+  "edit/rename": {
+    "summary": "Adds `Rename`, which refuses a blank title.",
+    "review": "One question about spaces.",
+    "comments": [
+      {
+        "path": "internal/store/edit.go",
+        "line": 18,
+        "body": "A title with spaces around it, like `' Pay rent '`, is kept as is, so the list shows the padding. Should this store `strings.TrimSpace(title)`?"
+      }
+    ]
+  },
+  "edit/priority": {
+    "summary": "Adds `SetPriority`, which reorders the list.",
+    "review": "One small question.",
+    "comments": [
+      {
+        "path": "internal/store/edit.go",
+        "line": 28,
+        "body": "A done task can still change priority, and nothing shows it. Is that intended, or should done tasks be left alone?"
+      }
+    ]
+  },
+  "edit/cli": {
+    "summary": "Adds the `taskr edit` command. The `format` check is red because of `change.go`, see the note on that file.",
+    "review": "Two things to look at before this merges.",
+    "comments": [
+      {
+        "path": "internal/format/change.go",
+        "line": 12,
+        "body": "`gofmt` flags this file: its body is indented with spaces, not tabs. That's what is failing the `format` check. Running `gofmt -w internal/format/change.go` fixes it."
+      },
+      {
+        "path": "main.go",
+        "line": 74,
+        "body": "`taskr edit 3` with neither flag prints `#3: no change` and still saves the list. Should it say which flags it takes instead, the way `add` does for a missing title?"
+      }
+    ]
+  }
+}
