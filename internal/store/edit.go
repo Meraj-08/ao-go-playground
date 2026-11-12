@@ -19,6 +19,16 @@ func (s *Store) Rename(id int, title string) error {
 	return nil
 }
 
+// SetPriority moves the task with id to priority p, which reorders the list.
+func (s *Store) SetPriority(id int, p Priority) error {
+	t, err := s.find(id)
+	if err != nil {
+		return err
+	}
+	t.Priority = p
+	return nil
+}
+
 // find returns the task with id, to change in place.
 func (s *Store) find(id int) (*Task, error) {
 	for i := range s.Tasks {
