@@ -56,22 +56,47 @@ func (p Priority) String() string {
 type Store struct {
 	Path  string
 	Tasks []Task
+	lock  *os.File
 }
 
 // Open loads the tasks at path. A missing file is an empty list.
+//
+// Open takes the list's lock and Save lets it go, so a command's read, change
+// and write happen as one step: a second taskr waits instead of writing over
+// the first one's task. Close lets go without saving.
 func Open(path string) (*Store, error) {
-	s := &Store{Path: path}
+	lock, err := os.OpenFile(path+".lock", os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return nil, err
+	}
+	if err := lockFile(lock); err != nil {
+		lock.Close()
+		return nil, fmt.Errorf("lock %s: %w", path, err)
+	}
+	s := &Store{Path: path, lock: lock}
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return s, nil
 	}
 	if err != nil {
+		s.Close()
 		return nil, err
 	}
 	if err := json.Unmarshal(data, &s.Tasks); err != nil {
+		s.Close()
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 	return s, nil
+}
+
+// Close lets go of the list's lock. Closing a saved store does nothing.
+func (s *Store) Close() error {
+	if s.lock == nil {
+		return nil
+	}
+	err := s.lock.Close()
+	s.lock = nil
+	return err
 }
 
 // Add appends a task and returns it.
@@ -107,8 +132,9 @@ func (s *Store) Sorted() []Task {
 	return out
 }
 
-// Save writes the tasks back to disk.
+// Save writes the tasks back to disk and lets go of the lock.
 func (s *Store) Save() error {
+	defer s.Close()
 	data, err := json.MarshalIndent(s.Tasks, "", "  ")
 	if err != nil {
 		return err
