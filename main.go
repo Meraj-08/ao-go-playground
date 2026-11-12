@@ -22,7 +22,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id>")
+		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id> | edit <id> [-title t] [-priority p]")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -56,6 +56,47 @@ func run(args []string) error {
 		}
 		if err := s.Done(id); err != nil {
 			return err
+		}
+	case "edit":
+		fs := flag.NewFlagSet("edit", flag.ContinueOnError)
+		title := fs.String("title", "", "the new title")
+		prio := fs.String("priority", "", "low, normal or high")
+		if len(args) < 2 {
+			return fmt.Errorf("edit needs an id")
+		}
+		id, err := strconv.Atoi(args[1])
+		if err != nil {
+			return fmt.Errorf("bad id %q", args[1])
+		}
+		if err := fs.Parse(args[2:]); err != nil {
+			return err
+		}
+		var before store.Task
+		for _, t := range s.Tasks {
+			if t.ID == id {
+				before = t
+			}
+		}
+		if *title != "" {
+			if err := s.Rename(id, *title); err != nil {
+				return err
+			}
+		}
+		if *prio != "" {
+			p, err := store.ParsePriority(*prio)
+			if err != nil {
+				return err
+			}
+			if err := s.SetPriority(id, p); err != nil {
+				return err
+			}
+		}
+		for _, t := range s.Tasks {
+			if t.ID == id {
+				if err := format.Change(os.Stdout, before, t); err != nil {
+					return err
+				}
+			}
 		}
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
