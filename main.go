@@ -28,6 +28,8 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	// Save lets go of the list's lock; this covers the commands that don't save.
+	defer s.Close()
 	switch args[0] {
 	case "add":
 		fs := flag.NewFlagSet("add", flag.ContinueOnError)
