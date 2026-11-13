@@ -71,6 +71,9 @@ func run(args []string) error {
 		if err := fs.Parse(args[2:]); err != nil {
 			return err
 		}
+		if *title == "" && *prio == "" {
+			return fmt.Errorf("edit needs -title or -priority")
+		}
 		var before store.Task
 		for _, t := range s.Tasks {
 			if t.ID == id {
