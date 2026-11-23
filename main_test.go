@@ -191,7 +191,10 @@ func capture(t *testing.T, args ...string) (stdout, stderr string, runErr error)
 	return string(out), string(errOut), runErr
 }
 
-// pinnedIDs returns the ids of the pinned tasks on disk, in id order.
+// pinnedIDs returns the ids of the pinned tasks saved on disk, sorted
+// ascending. The order does not depend on the order the ids were given to
+// "pin" or on how "list" would sort the tasks, so callers can compare the
+// result against a fixed slice.
 func pinnedIDs(t *testing.T) []int {
 	t.Helper()
 	s, err := store.Open(file)
@@ -204,6 +207,7 @@ func pinnedIDs(t *testing.T) []int {
 			ids = append(ids, task.ID)
 		}
 	}
+	slices.Sort(ids)
 	return ids
 }
 
