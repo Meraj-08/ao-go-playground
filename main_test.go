@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -154,23 +155,178 @@ func TestListPinnedFlag(t *testing.T) {
 // rest in that same order.
 func listOutput(t *testing.T, args ...string) string {
 	t.Helper()
-	r, w, err := os.Pipe()
+	stdout, _, err := capture(t, args...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	stdout := os.Stdout
-	os.Stdout = w
-	runErr := run(args)
-	os.Stdout = stdout
-	w.Close()
-	if runErr != nil {
-		t.Fatal(runErr)
-	}
-	out, err := io.ReadAll(r)
+	return stdout
+}
+
+// capture runs taskr with args and returns what it printed to stdout and to
+// stderr, along with the error run returned.
+func capture(t *testing.T, args ...string) (stdout, stderr string, runErr error) {
+	t.Helper()
+	outR, outW, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return string(out)
+	errR, errW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldOut, oldErr := os.Stdout, os.Stderr
+	os.Stdout, os.Stderr = outW, errW
+	runErr = run(args)
+	os.Stdout, os.Stderr = oldOut, oldErr
+	outW.Close()
+	errW.Close()
+	out, err := io.ReadAll(outR)
+	if err != nil {
+		t.Fatal(err)
+	}
+	errOut, err := io.ReadAll(errR)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out), string(errOut), runErr
+}
+
+// pinnedIDs returns the ids of the pinned tasks saved on disk, sorted
+// ascending. The order does not depend on the order the ids were given to
+// "pin" or on how "list" would sort the tasks, so callers can compare the
+// result against a fixed slice.
+func pinnedIDs(t *testing.T) []int {
+	t.Helper()
+	s, err := store.Open(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := []int{}
+	for _, task := range s.Tasks {
+		if task.Pinned {
+			ids = append(ids, task.ID)
+		}
+	}
+	slices.Sort(ids)
+	return ids
+}
+
+func TestPinUnpinSeveralIDs(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chdir(wd) })
+
+	for _, title := range []string{"one", "two", "three", "four"} {
+		if err := run([]string{"add", title}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, tc := range []struct {
+		name       string
+		args       []string
+		wantOut    string
+		wantErrOut string
+		wantErr    string
+		wantPinned []int
+	}{
+		{
+			name:       "pin several, reported in the order given",
+			args:       []string{"pin", "4", "1", "2"},
+			wantOut:    "pinned #4\npinned #1\npinned #2\n",
+			wantPinned: []int{1, 2, 4},
+		},
+		{
+			name:       "unpin several",
+			args:       []string{"unpin", "1", "4"},
+			wantOut:    "unpinned #1\nunpinned #4\n",
+			wantPinned: []int{2},
+		},
+		{
+			name:       "single id still works and is reported",
+			args:       []string{"pin", "3"},
+			wantOut:    "pinned #3\n",
+			wantPinned: []int{2, 3},
+		},
+		{
+			name:       "repeated and already-pinned ids are fine",
+			args:       []string{"pin", "3", "3"},
+			wantOut:    "pinned #3\npinned #3\n",
+			wantPinned: []int{2, 3},
+		},
+		{
+			name:       "bad ids are reported and the good ones still apply",
+			args:       []string{"pin", "1", "9", "x", "4"},
+			wantOut:    "pinned #1\npinned #4\n",
+			wantErrOut: "taskr: no task 9\ntaskr: bad id \"x\"\n",
+			wantErr:    "pin failed for 2 of 4 ids",
+			wantPinned: []int{1, 2, 3, 4},
+		},
+		{
+			name:       "unpin with a bad id",
+			args:       []string{"unpin", "9", "2", "3"},
+			wantOut:    "unpinned #2\nunpinned #3\n",
+			wantErrOut: "taskr: no task 9\n",
+			wantErr:    "unpin failed for 1 of 3 ids",
+			wantPinned: []int{1, 4},
+		},
+		{
+			name:       "every id bad changes nothing",
+			args:       []string{"unpin", "9", "1.5"},
+			wantErrOut: "taskr: no task 9\ntaskr: bad id \"1.5\"\n",
+			wantErr:    "unpin failed for 2 of 2 ids",
+			wantPinned: []int{1, 4},
+		},
+		{
+			name:       "no ids",
+			args:       []string{"pin"},
+			wantErr:    "pin needs at least one id",
+			wantPinned: []int{1, 4},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, errOut, err := capture(t, tc.args...)
+			if out != tc.wantOut {
+				t.Errorf("stdout = %q, want %q", out, tc.wantOut)
+			}
+			if errOut != tc.wantErrOut {
+				t.Errorf("stderr = %q, want %q", errOut, tc.wantErrOut)
+			}
+			switch {
+			case tc.wantErr == "" && err != nil:
+				t.Errorf("unexpected error: %v", err)
+			case tc.wantErr != "" && (err == nil || err.Error() != tc.wantErr):
+				t.Errorf("error = %v, want %q", err, tc.wantErr)
+			}
+			if got := pinnedIDs(t); !slices.Equal(got, tc.wantPinned) {
+				t.Errorf("pinned ids = %v, want %v", got, tc.wantPinned)
+			}
+		})
+	}
+}
+
+// With nothing to save, a failed pin must not create tasks.json.
+func TestPinAllBadIDsDoesNotWriteFile(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chdir(wd) })
+
+	if _, _, err := capture(t, "pin", "1", "2"); err == nil {
+		t.Fatal("expected an error")
+	}
+	if _, err := os.Stat(file); !os.IsNotExist(err) {
+		t.Errorf("tasks.json should not exist, stat err = %v", err)
+	}
 }
 
 func TestRunWithoutArgs(t *testing.T) {

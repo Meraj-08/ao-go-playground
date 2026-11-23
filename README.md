@@ -11,8 +11,8 @@ A tiny todo CLI used to try out the Agent Orchestrator PR view.
 | `taskr list` | Shows all tasks as a table: pinned tasks first, then open before done, then highest priority |
 | `taskr list -pinned` | Shows only the pinned tasks, in the same table and order |
 | `taskr done <id>` | Marks a task as done |
-| `taskr pin <id>` | Pins a task so it is listed first |
-| `taskr unpin <id>` | Unpins a task |
+| `taskr pin <id>...` | Pins one or more tasks so they are listed first |
+| `taskr unpin <id>...` | Unpins one or more tasks |
 
 Priorities are `low`, `normal` (the default) and `high`; anything else is rejected.
 
@@ -30,6 +30,25 @@ ID  DONE  PRIORITY  TITLE
 ```
 ID  DONE  PRIORITY  TITLE
 3   [ ]   low       📌 water the plants
+```
+
+`pin` and `unpin` take any number of ids and report each one on its own line, in the order given:
+
+```
+$ taskr pin 2 5 7
+pinned #2
+pinned #5
+pinned #7
+```
+
+An id that is not a number or matches no task is reported on stderr and does not stop the others: the rest are still pinned (or unpinned) and saved, and `taskr` exits with status 1.
+
+```
+$ taskr pin 2 9 7
+pinned #2
+taskr: no task 9
+pinned #7
+taskr: pin failed for 1 of 3 ids
 ```
 
 Tasks are kept in `tasks.json` in the current directory.
