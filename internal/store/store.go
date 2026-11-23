@@ -125,3 +125,16 @@ func (s *Store) nextID() int {
 	}
 	return max + 1
 }
+
+// ClearDone removes every done task and returns how many it removed.
+func (s *Store) ClearDone() int {
+	kept := s.Tasks[:0]
+	for _, t := range s.Tasks {
+		if !t.Done {
+			kept = append(kept, t)
+		}
+	}
+	n := len(s.Tasks) - len(kept)
+	s.Tasks = kept
+	return n
+}

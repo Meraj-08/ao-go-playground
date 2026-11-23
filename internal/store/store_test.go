@@ -62,3 +62,24 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 		t.Fatalf("unexpected order: %v, %v, %v", got[0].Title, got[1].Title, got[2].Title)
 	}
 }
+
+func TestClearDone(t *testing.T) {
+	s := &Store{}
+	s.Add("a", Normal)
+	b := s.Add("b", Normal)
+	c := s.Add("c", High)
+	for _, id := range []int{b.ID, c.ID} {
+		if err := s.Done(id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := s.ClearDone(); n != 2 {
+		t.Fatalf("removed %d, want 2", n)
+	}
+	if len(s.Tasks) != 1 || s.Tasks[0].Title != "a" {
+		t.Fatalf("unexpected tasks left: %+v", s.Tasks)
+	}
+	if n := s.ClearDone(); n != 0 {
+		t.Fatalf("second clear removed %d, want 0", n)
+	}
+}

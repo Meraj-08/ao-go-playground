@@ -22,7 +22,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id>")
+		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id> | clear-done")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -57,6 +57,8 @@ func run(args []string) error {
 		if err := s.Done(id); err != nil {
 			return err
 		}
+	case "clear-done":
+		fmt.Printf("removed %d done task(s)\n", s.ClearDone())
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
