@@ -1,6 +1,7 @@
 package store
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -63,6 +64,8 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 	}
 }
 
+// TestSetPinnedSave checks that pinning changes only the given task, and that
+// tasks keep the order they were added in across a save and reload.
 func TestSetPinnedSave(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tasks.json")
 	s := &Store{Path: path}
@@ -90,5 +93,15 @@ func TestSetPinnedMissing(t *testing.T) {
 	s := &Store{}
 	if err := s.SetPinned(9, true); err == nil {
 		t.Fatal("expected an error for a missing task")
+	}
+}
+
+func TestOpenRejectsBadPinned(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tasks.json")
+	if err := os.WriteFile(path, []byte(`[{"id":1,"pinned":"yes"}]`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Open(path); err == nil {
+		t.Fatal("expected an error for a non-boolean pinned value")
 	}
 }
