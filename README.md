@@ -10,6 +10,7 @@ A tiny todo CLI used to try out the Agent Orchestrator PR view.
 | `taskr add -priority high "<title>"` | Adds a task with the given priority |
 | `taskr list` | Shows all tasks as a table, open tasks first, highest priority at the top |
 | `taskr done <id>` | Marks a task as done |
+| `taskr undo <id>` | Marks a done task as open again; errors if it is already open or missing |
 
 Priorities are `low`, `normal` (the default) and `high`; anything else is rejected.
 

@@ -62,3 +62,23 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 		t.Fatalf("unexpected order: %v, %v, %v", got[0].Title, got[1].Title, got[2].Title)
 	}
 }
+
+func TestUndo(t *testing.T) {
+	s := &Store{}
+	a := s.Add("task", Normal)
+	if err := s.Undo(a.ID); err == nil {
+		t.Fatal("expected an error undoing an open task")
+	}
+	if err := s.Done(a.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Undo(a.ID); err != nil {
+		t.Fatal(err)
+	}
+	if s.Tasks[0].Done {
+		t.Fatal("task still done after undo")
+	}
+	if err := s.Undo(9); err == nil {
+		t.Fatal("expected an error for a missing task")
+	}
+}
