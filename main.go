@@ -22,7 +22,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add [-priority p] <title> | list [-pinned] | done <id> | pin <id> | unpin <id>")
+		return fmt.Errorf("usage: taskr add [-priority p] <title> | list [-pinned] | done <id> | pin <id>... | unpin <id>...")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -70,20 +70,45 @@ func run(args []string) error {
 			return err
 		}
 	case "pin", "unpin":
-		if len(args) < 2 {
-			return fmt.Errorf("%s needs an id", args[0])
-		}
-		id, err := strconv.Atoi(args[1])
-		if err != nil {
-			return fmt.Errorf("bad id %q", args[1])
-		}
-		if err := s.SetPinned(id, args[0] == "pin"); err != nil {
-			return err
-		}
+		return setPinned(s, args[0], args[1:])
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
 	return s.Save()
+}
+
+// setPinned runs "pin" or "unpin" (cmd) on every id in ids, in the order
+// given, and reports each one: "pinned #2" or "unpinned #2" on stdout, or the
+// reason it failed on stderr. A bad id does not stop the rest: the ids that
+// worked are saved, and the returned error says how many did not.
+func setPinned(s *store.Store, cmd string, ids []string) error {
+	if len(ids) == 0 {
+		return fmt.Errorf("%s needs at least one id", cmd)
+	}
+	failed := 0
+	for _, arg := range ids {
+		id, err := strconv.Atoi(arg)
+		if err != nil {
+			err = fmt.Errorf("bad id %q", arg)
+		} else {
+			err = s.SetPinned(id, cmd == "pin")
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "taskr:", err)
+			failed++
+			continue
+		}
+		fmt.Printf("%sned #%d\n", cmd, id)
+	}
+	if failed < len(ids) {
+		if err := s.Save(); err != nil {
+			return err
+		}
+	}
+	if failed > 0 {
+		return fmt.Errorf("%s failed for %d of %d ids", cmd, failed, len(ids))
+	}
+	return nil
 }
 
 // onlyPinned returns the pinned tasks in the order given; it does not sort,
