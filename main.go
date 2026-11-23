@@ -22,7 +22,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id> | pin <id> | unpin <id>")
+		return fmt.Errorf("usage: taskr add [-priority p] <title> | list [-pinned] | done <id> | pin <id> | unpin <id>")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -45,7 +45,16 @@ func run(args []string) error {
 		t := s.Add(fs.Arg(0), p)
 		fmt.Printf("added #%d\n", t.ID)
 	case "list":
-		return format.Table(os.Stdout, s.Sorted())
+		fs := flag.NewFlagSet("list", flag.ContinueOnError)
+		pinned := fs.Bool("pinned", false, "show only pinned tasks")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		tasks := s.Sorted()
+		if *pinned {
+			tasks = onlyPinned(tasks)
+		}
+		return format.Table(os.Stdout, tasks)
 	case "done":
 		if len(args) < 2 {
 			return fmt.Errorf("done needs an id")
@@ -72,4 +81,15 @@ func run(args []string) error {
 		return fmt.Errorf("unknown command %q", args[0])
 	}
 	return s.Save()
+}
+
+// onlyPinned returns the pinned tasks, keeping their order.
+func onlyPinned(tasks []store.Task) []store.Task {
+	var out []store.Task
+	for _, t := range tasks {
+		if t.Pinned {
+			out = append(out, t)
+		}
+	}
+	return out
 }
