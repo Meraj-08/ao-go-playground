@@ -141,6 +141,8 @@ func TestSortedBreaksTiesOldestFirst(t *testing.T) {
 	}}
 	if got := s.Sorted(); got[0].Title != "older" || got[1].Title != "newer" {
 		t.Fatalf("unexpected order: %q, %q", got[0].Title, got[1].Title)
+	}
+}
 
 func TestOpenRejectsBadPinned(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tasks.json")
