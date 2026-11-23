@@ -41,3 +41,9 @@ func TestPinUnpin(t *testing.T) {
 		}
 	}
 }
+
+func TestRunWithoutArgs(t *testing.T) {
+	if err := run(nil); err == nil {
+		t.Fatal("expected a usage error")
+	}
+}
