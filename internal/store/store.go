@@ -92,6 +92,18 @@ func (s *Store) Done(id int) error {
 	return fmt.Errorf("no task %d", id)
 }
 
+// Count returns how many tasks are open and how many are done.
+func (s *Store) Count() (open, done int) {
+	for _, t := range s.Tasks {
+		if t.Done {
+			done++
+		} else {
+			open++
+		}
+	}
+	return open, done
+}
+
 // Sorted returns the tasks with open ones first, then by priority, then oldest first.
 func (s *Store) Sorted() []Task {
 	out := append([]Task(nil), s.Tasks...)
