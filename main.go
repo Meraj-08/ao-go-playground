@@ -50,6 +50,9 @@ func run(args []string) error {
 		if err := fs.Parse(args[1:]); err != nil {
 			return err
 		}
+		if fs.NArg() > 0 {
+			return fmt.Errorf("list takes no arguments, got %q (did you mean -pinned?)", fs.Arg(0))
+		}
 		tasks := s.Sorted()
 		if *pinned {
 			tasks = onlyPinned(tasks)

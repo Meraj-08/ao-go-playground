@@ -133,8 +133,15 @@ func TestListPinnedFlag(t *testing.T) {
 		}
 	}
 
-	if err := run([]string{"list", "-bogus"}); err == nil {
-		t.Error("expected an error for an unknown list flag")
+	for _, bad := range [][]string{
+		{"list", "-bogus"},
+		{"list", "pinned"},
+		{"list", "-pinned", "extra"},
+		{"list", "-pinned=maybe"},
+	} {
+		if err := run(bad); err == nil {
+			t.Errorf("run(%q): expected an error", bad)
+		}
 	}
 }
 
