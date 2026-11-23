@@ -16,6 +16,7 @@ type Task struct {
 	Title    string    `json:"title"`
 	Done     bool      `json:"done"`
 	Priority Priority  `json:"priority"`
+	Pinned   bool      `json:"pinned,omitempty"`
 	Created  time.Time `json:"created"`
 }
 
@@ -86,6 +87,17 @@ func (s *Store) Done(id int) error {
 	for i := range s.Tasks {
 		if s.Tasks[i].ID == id {
 			s.Tasks[i].Done = true
+			return nil
+		}
+	}
+	return fmt.Errorf("no task %d", id)
+}
+
+// SetPinned pins or unpins the task with id.
+func (s *Store) SetPinned(id int, pinned bool) error {
+	for i := range s.Tasks {
+		if s.Tasks[i].ID == id {
+			s.Tasks[i].Pinned = pinned
 			return nil
 		}
 	}

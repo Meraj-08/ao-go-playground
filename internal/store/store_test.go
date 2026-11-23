@@ -1,6 +1,7 @@
 package store
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -60,5 +61,47 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 	got := s.Sorted()
 	if got[0].Title != "high" || got[1].Title != "low" || got[2].Title != "done high" {
 		t.Fatalf("unexpected order: %v, %v, %v", got[0].Title, got[1].Title, got[2].Title)
+	}
+}
+
+// TestSetPinnedSave checks that pinning changes only the given task, and that
+// tasks keep the order they were added in across a save and reload.
+func TestSetPinnedSave(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tasks.json")
+	s := &Store{Path: path}
+	s.Add("first", Normal)
+	s.Add("second", Normal)
+	for _, want := range []bool{true, false} {
+		if err := s.SetPinned(2, want); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.Save(); err != nil {
+			t.Fatal(err)
+		}
+		again, err := Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if again.Tasks[0].Pinned || again.Tasks[1].Pinned != want {
+			t.Fatalf("want second pinned=%v: %+v", want, again.Tasks)
+		}
+		s = again
+	}
+}
+
+func TestSetPinnedMissing(t *testing.T) {
+	s := &Store{}
+	if err := s.SetPinned(9, true); err == nil {
+		t.Fatal("expected an error for a missing task")
+	}
+}
+
+func TestOpenRejectsBadPinned(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tasks.json")
+	if err := os.WriteFile(path, []byte(`[{"id":1,"pinned":"yes"}]`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Open(path); err == nil {
+		t.Fatal("expected an error for a non-boolean pinned value")
 	}
 }

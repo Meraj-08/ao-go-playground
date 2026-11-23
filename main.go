@@ -22,7 +22,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id>")
+		return fmt.Errorf("usage: taskr add [-priority p] <title> | list | done <id> | pin <id> | unpin <id>")
 	}
 	s, err := store.Open(file)
 	if err != nil {
@@ -55,6 +55,17 @@ func run(args []string) error {
 			return fmt.Errorf("bad id %q", args[1])
 		}
 		if err := s.Done(id); err != nil {
+			return err
+		}
+	case "pin", "unpin":
+		if len(args) < 2 {
+			return fmt.Errorf("%s needs an id", args[0])
+		}
+		id, err := strconv.Atoi(args[1])
+		if err != nil {
+			return fmt.Errorf("bad id %q", args[1])
+		}
+		if err := s.SetPinned(id, args[0] == "pin"); err != nil {
 			return err
 		}
 	default:
