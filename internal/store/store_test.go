@@ -62,3 +62,33 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 		t.Fatalf("unexpected order: %v, %v, %v", got[0].Title, got[1].Title, got[2].Title)
 	}
 }
+
+func TestSetPinnedSave(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tasks.json")
+	s := &Store{Path: path}
+	s.Add("first", Normal)
+	s.Add("second", Normal)
+	for _, want := range []bool{true, false} {
+		if err := s.SetPinned(2, want); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.Save(); err != nil {
+			t.Fatal(err)
+		}
+		again, err := Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if again.Tasks[0].Pinned || again.Tasks[1].Pinned != want {
+			t.Fatalf("want second pinned=%v: %+v", want, again.Tasks)
+		}
+		s = again
+	}
+}
+
+func TestSetPinnedMissing(t *testing.T) {
+	s := &Store{}
+	if err := s.SetPinned(9, true); err == nil {
+		t.Fatal("expected an error for a missing task")
+	}
+}
