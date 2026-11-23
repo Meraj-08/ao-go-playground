@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/Meraj-08/ao-go-playground/internal/store"
@@ -52,5 +53,12 @@ func TestClearDoneCommand(t *testing.T) {
 	}
 	if len(s.Tasks) != 1 || s.Tasks[0].Title != "keep" {
 		t.Fatalf("saved tasks: %+v", s.Tasks)
+	}
+}
+
+func TestNoArgsShowsUsage(t *testing.T) {
+	err := run(nil)
+	if err == nil || !strings.Contains(err.Error(), "clear-done") {
+		t.Fatalf("got %v, want usage listing clear-done", err)
 	}
 }

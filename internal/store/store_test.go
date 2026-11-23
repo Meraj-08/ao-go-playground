@@ -63,11 +63,13 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 	}
 }
 
+// Open tasks must survive in the order they were added.
 func TestClearDone(t *testing.T) {
 	s := &Store{}
 	s.Add("a", Normal)
 	b := s.Add("b", Normal)
 	c := s.Add("c", High)
+	s.Add("d", High)
 	for _, id := range []int{b.ID, c.ID} {
 		if err := s.Done(id); err != nil {
 			t.Fatal(err)
@@ -76,7 +78,7 @@ func TestClearDone(t *testing.T) {
 	if n := s.ClearDone(); n != 2 {
 		t.Fatalf("removed %d, want 2", n)
 	}
-	if len(s.Tasks) != 1 || s.Tasks[0].Title != "a" {
+	if len(s.Tasks) != 2 || s.Tasks[0].Title != "a" || s.Tasks[1].Title != "d" {
 		t.Fatalf("unexpected tasks left: %+v", s.Tasks)
 	}
 	if n := s.ClearDone(); n != 0 {
