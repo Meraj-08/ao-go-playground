@@ -86,7 +86,8 @@ func run(args []string) error {
 	return s.Save()
 }
 
-// onlyPinned returns the pinned tasks, keeping their order.
+// onlyPinned returns the pinned tasks in the order given; it does not sort,
+// so pass store.Sorted() to get open before done, then priority, then oldest.
 func onlyPinned(tasks []store.Task) []store.Task {
 	var out []store.Task
 	for _, t := range tasks {

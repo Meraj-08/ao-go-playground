@@ -145,7 +145,13 @@ func TestListPinnedFlag(t *testing.T) {
 	}
 }
 
-// listOutput runs taskr with args and returns what it printed to stdout.
+// listOutput runs taskr with args, fails the test if the command errors, and
+// returns what it printed to stdout.
+//
+// For "list" that is the header line followed by one row per task in
+// store.Sorted order: pinned first, then open before done, then highest
+// priority, then oldest. "list -pinned" drops the unpinned rows and keeps the
+// rest in that same order.
 func listOutput(t *testing.T, args ...string) string {
 	t.Helper()
 	r, w, err := os.Pipe()
