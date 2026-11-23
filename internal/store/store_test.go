@@ -3,6 +3,7 @@ package store
 import (
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestAddDoneSave(t *testing.T) {
@@ -126,5 +127,16 @@ func TestSortedPutsPinnedFirst(t *testing.T) {
 	}
 	if got := s.Sorted(); got[1].Title != "pinned done high" || got[3].Title != "pinned low" {
 		t.Fatalf("after unpin: got %q, %q", got[1].Title, got[3].Title)
+	}
+}
+
+func TestSortedBreaksTiesOldestFirst(t *testing.T) {
+	now := time.Now()
+	s := &Store{Tasks: []Task{
+		{ID: 1, Title: "newer", Pinned: true, Created: now},
+		{ID: 2, Title: "older", Pinned: true, Created: now.Add(-time.Hour)},
+	}}
+	if got := s.Sorted(); got[0].Title != "older" || got[1].Title != "newer" {
+		t.Fatalf("unexpected order: %q, %q", got[0].Title, got[1].Title)
 	}
 }

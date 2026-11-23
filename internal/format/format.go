@@ -12,8 +12,10 @@ import (
 // PinMark is shown in front of the title of a pinned task.
 const PinMark = "📌"
 
-// Table writes tasks as aligned columns. Pinned tasks get PinMark before the
-// title; it sits in the last column so its width cannot skew the alignment.
+// Table writes tasks as aligned columns, one row per task in the order given;
+// it does not sort, so pass store.Sorted() for the usual pinned-first order.
+// Pinned tasks get PinMark before the title; it sits in the last column so its
+// width cannot skew the alignment.
 func Table(w io.Writer, tasks []store.Task) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(tw, "ID\tDONE\tPRIORITY\tTITLE")
