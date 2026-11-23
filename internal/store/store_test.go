@@ -63,6 +63,7 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 	}
 }
 
+// TestCount checks the totals; Count does not depend on task order.
 func TestCount(t *testing.T) {
 	s := &Store{}
 	if open, done := s.Count(); open != 0 || done != 0 {

@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -43,5 +44,12 @@ func TestCountCommand(t *testing.T) {
 				t.Fatalf("got %q, want %q", out, tc.want)
 			}
 		})
+	}
+}
+
+func TestRunWithoutArgsShowsUsage(t *testing.T) {
+	err := run(nil)
+	if err == nil || !strings.Contains(err.Error(), "usage: taskr") || !strings.Contains(err.Error(), "count") {
+		t.Fatalf("got %v, want a usage error that lists count", err)
 	}
 }
