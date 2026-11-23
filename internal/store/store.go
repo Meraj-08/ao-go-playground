@@ -92,6 +92,20 @@ func (s *Store) Done(id int) error {
 	return fmt.Errorf("no task %d", id)
 }
 
+// Undo marks the done task with id as open again.
+func (s *Store) Undo(id int) error {
+	for i := range s.Tasks {
+		if s.Tasks[i].ID == id {
+			if !s.Tasks[i].Done {
+				return fmt.Errorf("task %d is already open", id)
+			}
+			s.Tasks[i].Done = false
+			return nil
+		}
+	}
+	return fmt.Errorf("no task %d", id)
+}
+
 // Sorted returns the tasks with open ones first, then by priority, then oldest first.
 func (s *Store) Sorted() []Task {
 	out := append([]Task(nil), s.Tasks...)
