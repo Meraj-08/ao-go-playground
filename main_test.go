@@ -64,24 +64,9 @@ func TestListShowsPinnedFirst(t *testing.T) {
 		}
 	}
 
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	stdout := os.Stdout
-	os.Stdout = w
-	runErr := run([]string{"list"})
-	os.Stdout = stdout
-	w.Close()
-	if runErr != nil {
-		t.Fatal(runErr)
-	}
-	out, err := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
-	}
+	out := listOutput(t, "list")
 
-	lines := strings.Split(strings.TrimRight(string(out), "\n"), "\n")
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
 	if len(lines) != 3 {
 		t.Fatalf("unexpected list output:\n%s", out)
 	}
@@ -91,6 +76,101 @@ func TestListShowsPinnedFirst(t *testing.T) {
 	if !strings.HasSuffix(lines[2], "urgent") || strings.Contains(lines[2], "📌") {
 		t.Errorf("unpinned task should follow without a pin, got %q", lines[2])
 	}
+}
+
+func TestListPinnedFlag(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chdir(wd) })
+
+	const header = "ID  DONE  PRIORITY  TITLE"
+	if got := listOutput(t, "list", "-pinned"); got != header+"\n" {
+		t.Errorf("empty store: got %q, want only the header", got)
+	}
+
+	for _, args := range [][]string{
+		{"add", "-priority", "high", "urgent"},
+		{"add", "-priority", "low", "pinned low"},
+		{"add", "-priority", "high", "pinned high"},
+		{"add", "pinned done"},
+		{"pin", "2"},
+		{"pin", "3"},
+		{"pin", "4"},
+		{"done", "4"},
+	} {
+		if err := run(args); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// No pinned filter: all four rows. With it: the same rows minus the
+	// unpinned one, in the same order.
+	all := strings.Split(strings.TrimRight(listOutput(t, "list"), "\n"), "\n")
+	if len(all) != 5 {
+		t.Fatalf("unexpected list output: %q", all)
+	}
+	var want []string
+	for _, l := range all {
+		if l == header || strings.Contains(l, "📌") {
+			want = append(want, l)
+		}
+	}
+	if len(want) != 4 {
+		t.Fatalf("expected three pinned rows in %q", all)
+	}
+	got := strings.Split(strings.TrimRight(listOutput(t, "list", "-pinned"), "\n"), "\n")
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("list -pinned:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+	for i, title := range []string{"pinned high", "pinned low", "pinned done"} {
+		if !strings.HasSuffix(got[i+1], "📌 "+title) {
+			t.Errorf("row %d = %q, want title %q", i+1, got[i+1], title)
+		}
+	}
+
+	for _, bad := range [][]string{
+		{"list", "-bogus"},
+		{"list", "pinned"},
+		{"list", "-pinned", "extra"},
+		{"list", "-pinned=maybe"},
+	} {
+		if err := run(bad); err == nil {
+			t.Errorf("run(%q): expected an error", bad)
+		}
+	}
+}
+
+// listOutput runs taskr with args, fails the test if the command errors, and
+// returns what it printed to stdout.
+//
+// For "list" that is the header line followed by one row per task in
+// store.Sorted order: pinned first, then open before done, then highest
+// priority, then oldest. "list -pinned" drops the unpinned rows and keeps the
+// rest in that same order.
+func listOutput(t *testing.T, args ...string) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout := os.Stdout
+	os.Stdout = w
+	runErr := run(args)
+	os.Stdout = stdout
+	w.Close()
+	if runErr != nil {
+		t.Fatal(runErr)
+	}
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out)
 }
 
 func TestRunWithoutArgs(t *testing.T) {
