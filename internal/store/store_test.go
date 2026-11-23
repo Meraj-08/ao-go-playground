@@ -62,3 +62,22 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 		t.Fatalf("unexpected order: %v, %v, %v", got[0].Title, got[1].Title, got[2].Title)
 	}
 }
+
+// TestCount checks the totals; Count does not depend on task order.
+func TestCount(t *testing.T) {
+	s := &Store{}
+	if open, done := s.Count(); open != 0 || done != 0 {
+		t.Fatalf("empty store: got %d open, %d done", open, done)
+	}
+	for i := 0; i < 5; i++ {
+		s.Add("task", Normal)
+	}
+	for _, id := range []int{1, 4} {
+		if err := s.Done(id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if open, done := s.Count(); open != 3 || done != 2 {
+		t.Fatalf("got %d open, %d done; want 3 open, 2 done", open, done)
+	}
+}
