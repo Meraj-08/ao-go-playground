@@ -63,6 +63,7 @@ func TestSortedPutsOpenHighFirst(t *testing.T) {
 	}
 }
 
+// TestUndo checks that only an existing, done task can be reopened.
 func TestUndo(t *testing.T) {
 	s := &Store{}
 	a := s.Add("task", Normal)
