@@ -92,3 +92,39 @@ func TestSetPinnedMissing(t *testing.T) {
 		t.Fatal("expected an error for a missing task")
 	}
 }
+
+func TestSortedPutsPinnedFirst(t *testing.T) {
+	s := &Store{}
+	s.Add("high", High)
+	s.Add("pinned low", Low)
+	s.Add("pinned high", High)
+	s.Add("pinned done high", High)
+	s.Add("done high", High)
+	for _, id := range []int{2, 3, 4} {
+		if err := s.SetPinned(id, true); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, id := range []int{4, 5} {
+		if err := s.Done(id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := []string{"pinned high", "pinned low", "pinned done high", "high", "done high"}
+	got := s.Sorted()
+	for i, w := range want {
+		if got[i].Title != w {
+			t.Fatalf("position %d: got %q, want %q", i, got[i].Title, w)
+		}
+	}
+	if s.Tasks[0].Title != "high" {
+		t.Fatal("Sorted must not reorder the stored tasks")
+	}
+
+	if err := s.SetPinned(2, false); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.Sorted(); got[1].Title != "pinned done high" || got[3].Title != "pinned low" {
+		t.Fatalf("after unpin: got %q, %q", got[1].Title, got[3].Title)
+	}
+}

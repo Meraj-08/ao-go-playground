@@ -104,10 +104,14 @@ func (s *Store) SetPinned(id int, pinned bool) error {
 	return fmt.Errorf("no task %d", id)
 }
 
-// Sorted returns the tasks with open ones first, then by priority, then oldest first.
+// Sorted returns the tasks with pinned ones first, then open ones, then by
+// priority, then oldest first.
 func (s *Store) Sorted() []Task {
 	out := append([]Task(nil), s.Tasks...)
 	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Pinned != out[j].Pinned {
+			return out[i].Pinned
+		}
 		if out[i].Done != out[j].Done {
 			return !out[i].Done
 		}
